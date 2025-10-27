@@ -143,12 +143,12 @@
                 <div class="antenna-controls">
                     <div class="antenna-input">
                         <label for="antenna1-height">Point A:</label>
-                        <input type="number" id="antenna1-height" value="10" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
+                        <input type="number" id="antenna1-height" value="10" min="0" max="200" step="0.1" onchange="updateAnalysis()">
                         <span>meters</span>
                     </div>
                     <div class="antenna-input">
                         <label for="antenna2-height">Point B:</label>
-                        <input type="number" id="antenna2-height" value="10" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
+                        <input type="number" id="antenna2-height" value="10" min="0" max="200" step="0.1" onchange="updateAnalysis()">
                         <span>meters</span>
                     </div>
                 </div>
@@ -202,7 +202,6 @@
         let isAnalyzing = false;
         let lineOfSightClear = false;
         let hoverMarker = null;
-        let liveUpdateTimeout = null;
         
         // Initialize the map
         var map = L.map('map').setView([44.422633, -72.396017], 11);
@@ -460,30 +459,20 @@
             return R * c;
         }
 
-        function updateAnalysisLive() {
-            // Clear existing timeout to debounce rapid changes
-            if (liveUpdateTimeout) {
-                clearTimeout(liveUpdateTimeout);
-            }
-            
-            // Set a short delay to avoid overwhelming updates while typing
-            liveUpdateTimeout = setTimeout(() => {
-                updateAnalysis();
-            }, 250); // 250ms delay
-        }
-
         function updateAnalysis() {
             // Called when antenna heights change
             if (selectedPoints.length === 2 && elevationData.length > 0 && !isAnalyzing) {
-                // Recalculate with new antenna heights immediately (no setTimeout delay)
-                const hasLineOfSight = calculateLineOfSight();
-                lineOfSightClear = hasLineOfSight;
-                
-                drawPath(); // Update path color
-                plotElevationProfile(); // Update profile with new antenna heights
-                addElevationMarkers(); // Update obstruction markers
-                
-                // Line of sight status reflected in graph color
+                // Recalculate with new antenna heights
+                setTimeout(() => {
+                    const hasLineOfSight = calculateLineOfSight();
+                    lineOfSightClear = hasLineOfSight;
+                    
+                    drawPath(); // Update path color
+                    plotElevationProfile(); // Update profile with new antenna heights
+                    addElevationMarkers(); // Update obstruction markers
+                    
+                    // Line of sight status reflected in graph color
+                }, 100);
             }
         }
 
@@ -737,7 +726,7 @@
             };
             
             const layout = {
-                title: `Elevation Profile (${leftLabel} --> ${rightLabel})`,
+                title: `Elevation Profile (${leftLabel} to ${rightLabel})`,
                 xaxis: {title: `Distance from ${leftLabel} (km)`},
                 yaxis: {title: 'Elevation (m)'},
                 showlegend: true,
