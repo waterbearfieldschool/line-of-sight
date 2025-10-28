@@ -392,7 +392,10 @@
             <div class="info-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 id="elevation-profile-header" style="margin: 0;">Elevation Profile</h3>
-                    <button class="btn" onclick="clearPoints()" style="padding: 4px 12px; font-size: 0.85em; line-height: 1.2;">Clear Points</button>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="btn" onclick="copyPoints()" style="padding: 4px 12px; font-size: 0.85em; line-height: 1.2;">Copy Points</button>
+                        <button class="btn" onclick="clearPoints()" style="padding: 4px 12px; font-size: 0.85em; line-height: 1.2;">Clear Points</button>
+                    </div>
                 </div>
                 <div id="elevation-profile"></div>
             </div>
@@ -641,6 +644,18 @@
                 }
             }
             
+            // Auto-zoom to fit all markers
+            if (selectedPoints.length >= 1) {
+                const group = new L.featureGroup(markers);
+                if (selectedPoints.length === 1) {
+                    // Center on single point
+                    map.setView(selectedPoints[0], Math.max(map.getZoom(), 13));
+                } else {
+                    // Fit bounds for multiple points
+                    map.fitBounds(group.getBounds().pad(0.1));
+                }
+            }
+            
             // Update path and analysis if we have two points
             if (selectedPoints.length === 2) {
                 drawPath();
@@ -734,6 +749,94 @@
             }
             
             return { lat, lon };
+        }
+
+        function copyPoints() {
+            if (selectedPoints.length < 2) {
+                alert('Please place both points A and B before copying.');
+                return;
+            }
+            
+            const latA = selectedPoints[0].lat.toFixed(6);
+            const lonA = selectedPoints[0].lng.toFixed(6);
+            const altA = document.getElementById('alt-a').value || '1';
+            
+            const latB = selectedPoints[1].lat.toFixed(6);
+            const lonB = selectedPoints[1].lng.toFixed(6);
+            const altB = document.getElementById('alt-b').value || '1';
+            
+            const pointsText = `A: ${latA}, ${lonA}, ${altA}; B: ${latB}, ${lonB}, ${altB}`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(pointsText).then(() => {
+                showCopyFeedback();
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = pointsText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showCopyFeedback();
+            });
+            
+            function showCopyFeedback() {
+                // Visual feedback - temporarily change button text and style
+                const button = event.target;
+                const originalText = button.textContent;
+                const originalBg = button.style.backgroundColor;
+                const originalColor = button.style.color;
+                
+                button.textContent = '✓ Copied!';
+                button.style.backgroundColor = '#28a745';
+                button.style.color = 'white';
+                button.style.transform = 'scale(1.05)';
+                button.style.transition = 'all 0.2s ease';
+                
+                // Create a temporary toast notification
+                const toast = document.createElement('div');
+                toast.textContent = 'Points copied to clipboard!';
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #28a745;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                    z-index: 10000;
+                    opacity: 0;
+                    transform: translateY(-10px);
+                    transition: all 0.3s ease;
+                `;
+                document.body.appendChild(toast);
+                
+                // Animate toast in
+                setTimeout(() => {
+                    toast.style.opacity = '1';
+                    toast.style.transform = 'translateY(0)';
+                }, 100);
+                
+                // Remove toast and reset button after delay
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-10px)';
+                    
+                    button.textContent = originalText;
+                    button.style.backgroundColor = originalBg;
+                    button.style.color = originalColor;
+                    button.style.transform = '';
+                    button.style.transition = '';
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(toast);
+                    }, 300);
+                }, 2000);
+            }
         }
 
         function clearPoints() {
