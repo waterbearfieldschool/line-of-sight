@@ -1099,16 +1099,28 @@
             };
             
             const layout = {
-                xaxis: {title: `Distance from ${leftLabel} (km)`},
-                yaxis: {title: 'Elevation (m)'},
+                xaxis: {
+                    title: `Distance from ${leftLabel} (km)`,
+                    fixedrange: true
+                },
+                yaxis: {
+                    title: 'Elevation (m)',
+                    fixedrange: true
+                },
                 showlegend: true,
                 margin: {l: 50, r: 50, t: 20, b: 50},
-                hovermode: 'x unified'
+                hovermode: 'x unified',
+                dragmode: false
             };
             
             const config = {
                 responsive: true,
-                displayModeBar: false
+                displayModeBar: false,
+                scrollZoom: false,
+                doubleClick: false,
+                showTips: false,
+                editable: false,
+                modeBarButtonsToRemove: ['pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d']
             };
             
             // Update the header with point direction
