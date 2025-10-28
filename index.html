@@ -177,31 +177,34 @@
         .info-section h3 {
             margin: 0 0 10px 0;
             color: #333;
+            font-size: 0.85em;
+            font-weight: bold;
         }
         
         /* Page title */
         .page-title {
-            background: #007bff;
-            color: white;
+            background: #e8f5e8;
+            color: #2d5a2d;
             margin: 0;
-            padding: 15px 20px;
-            font-size: 20px;
+            padding: 8px 20px;
+            font-size: 16px;
             font-weight: 600;
             text-align: center;
             border-bottom: 1px solid #ddd;
+            line-height: 1.2;
         }
         
         @media (max-width: 768px) {
             .page-title {
-                padding: 12px 15px;
-                font-size: 18px;
+                padding: 6px 15px;
+                font-size: 15px;
             }
         }
         
         @media (max-width: 480px) {
             .page-title {
-                padding: 10px;
-                font-size: 16px;
+                padding: 5px 10px;
+                font-size: 14px;
             }
         }
         
@@ -359,6 +362,9 @@
     </style>
 </head>
 <body>
+    <div class="page-title">
+        Line-of-sight Analysis Tool (open <a href="https://github.com/waterbearfieldschool/line-of-sight" target="_blank" style="color: #1a4a1a; text-decoration: underline;">source</a>)
+    </div>
     <div id="container">
         <div id="map"></div>
         <div id="sidebar">
@@ -420,6 +426,20 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- <div class="info-section">
+                <h3>About</h3>
+                <div style="font-size: 0.85em; line-height: 1.4; color: #555;">
+                    <p style="margin: 0 0 8px 0;">This tool calculates line-of-sight between two points by:</p>
+                    <ul style="margin: 0; padding-left: 16px;">
+                        <li style="margin-bottom: 4px;">Sampling elevation data along the path</li>
+                        <li style="margin-bottom: 4px;">Adding antenna heights to terrain elevation</li>
+                        <li style="margin-bottom: 4px;">Drawing a straight line between elevated points</li>
+                        <li style="margin-bottom: 4px;">Checking if terrain blocks this line</li>
+                    </ul>
+                    <p style="margin: 8px 0 0 0;"><strong>Fresnel zone:</strong> The calculation includes 60% of the first Fresnel zone clearance (assumed 915 MHz frequency) to account for radio wave diffraction effects.</p>
+                </div>
+            </div> -->
             
             <div class="info-section">
                 <a href="https://github.com/waterbearfieldschool/line-of-sight" target="_blank" class="github-link">
@@ -1024,7 +1044,7 @@
                 const expectedHeight = startHeight + (endHeight - startHeight) * ratio;
                 
                 // Check if terrain blocks the line (with 60% Fresnel zone clearance)
-                const fresnelRadius = calculateFresnelRadius(point.distance, elevationData[elevationData.length - 1].distance, 2400); // 2.4 GHz
+                const fresnelRadius = calculateFresnelRadius(point.distance, elevationData[elevationData.length - 1].distance, 915); // 915 MHz
                 const requiredClearance = expectedHeight - (fresnelRadius * 0.6);
                 
                 if (point.elevation > requiredClearance) {
@@ -1260,7 +1280,7 @@
                 const expectedHeight = startHeight + (endHeight - startHeight) * ratio;
                 
                 // Calculate Fresnel zone clearance
-                const fresnelRadius = calculateFresnelRadius(point.distance, elevationData[elevationData.length - 1].distance, 2400);
+                const fresnelRadius = calculateFresnelRadius(point.distance, elevationData[elevationData.length - 1].distance, 915);
                 const requiredClearance = expectedHeight - (fresnelRadius * 0.6);
                 
                 // Check if this point blocks the line of sight
