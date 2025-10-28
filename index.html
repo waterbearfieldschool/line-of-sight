@@ -373,7 +373,7 @@
                     </div>
                     <div class="field-group">
                         <label for="alt-a">Alt (m):</label>
-                        <input type="number" id="alt-a" value="10" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
+                        <input type="number" id="alt-a" value="0" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
                     </div>
                 </div>
                 
@@ -384,7 +384,7 @@
                     </div>
                     <div class="field-group">
                         <label for="alt-b">Alt (m):</label>
-                        <input type="number" id="alt-b" value="10" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
+                        <input type="number" id="alt-b" value="0" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
                     </div>
                 </div>
             </div>
@@ -908,16 +908,16 @@
             if (selectedPoints.length === 2) {
                 if (orderedPoints[0] === selectedPoints[0]) {
                     // A is leftmost
-                    antenna1Height = parseFloat(document.getElementById('alt-a').value) || 10;
-                    antenna2Height = parseFloat(document.getElementById('alt-b').value) || 10;
+                    antenna1Height = parseFloat(document.getElementById('alt-a').value) || 0;
+                    antenna2Height = parseFloat(document.getElementById('alt-b').value) || 0;
                 } else {
                     // B is leftmost
-                    antenna1Height = parseFloat(document.getElementById('alt-b').value) || 10;
-                    antenna2Height = parseFloat(document.getElementById('alt-a').value) || 10;
+                    antenna1Height = parseFloat(document.getElementById('alt-b').value) || 0;
+                    antenna2Height = parseFloat(document.getElementById('alt-a').value) || 0;
                 }
             } else {
-                antenna1Height = parseFloat(document.getElementById('alt-a').value) || 10;
-                antenna2Height = parseFloat(document.getElementById('alt-b').value) || 10;
+                antenna1Height = parseFloat(document.getElementById('alt-a').value) || 0;
+                antenna2Height = parseFloat(document.getElementById('alt-b').value) || 0;
             }
             
             return { antenna1Height, antenna2Height };
@@ -1148,6 +1148,52 @@
             if (headerElement) {
                 headerElement.textContent = `Elevation Profile ${leftLabel} --> ${rightLabel}`;
             }
+            
+            // Add point labels at start and end positions
+            const annotations = [
+                {
+                    x: distances[0],
+                    y: losLine[0],
+                    text: leftLabel,
+                    showarrow: true,
+                    arrowhead: 2,
+                    arrowsize: 1,
+                    arrowwidth: 2,
+                    arrowcolor: '#333',
+                    ax: 0,
+                    ay: -30,
+                    font: {
+                        size: 14,
+                        color: '#333',
+                        family: 'Arial, sans-serif'
+                    },
+                    bgcolor: 'rgba(255,255,255,0.8)',
+                    bordercolor: '#333',
+                    borderwidth: 1
+                },
+                {
+                    x: distances[distances.length - 1],
+                    y: losLine[losLine.length - 1],
+                    text: rightLabel,
+                    showarrow: true,
+                    arrowhead: 2,
+                    arrowsize: 1,
+                    arrowwidth: 2,
+                    arrowcolor: '#333',
+                    ax: 0,
+                    ay: -30,
+                    font: {
+                        size: 14,
+                        color: '#333',
+                        family: 'Arial, sans-serif'
+                    },
+                    bgcolor: 'rgba(255,255,255,0.8)',
+                    bordercolor: '#333',
+                    borderwidth: 1
+                }
+            ];
+            
+            layout.annotations = annotations;
             
             Plotly.newPlot('elevation-profile', [trace1, trace2], layout, config);
             
