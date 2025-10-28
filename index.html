@@ -362,6 +362,47 @@
     </style>
 </head>
 <body>
+    <!-- Welcome dialog -->
+    <div id="welcome-dialog" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 10000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+    ">
+        <div style="
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            cursor: default;
+        " onclick="event.stopPropagation()">
+            <h2 style="margin: 0 0 20px 0; color: #333; font-size: 24px;">Radio Line-of-sight Analysis</h2>
+            <p style="margin: 0 0 20px 0; color: #555; line-height: 1.5; font-size: 16px;">
+                Click on the map or enter lat/lon coordinates to place radio locations on the map.
+            </p>
+            <button onclick="closeWelcomeDialog()" style="
+                background: #007bff;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 4px;
+                font-size: 16px;
+                cursor: pointer;
+                font-weight: bold;
+            ">Get Started</button>
+            <p style="margin: 15px 0 0 0; color: #888; font-size: 12px;">Click anywhere to close</p>
+        </div>
+    </div>
+
     <div id="container">
         <div id="map"></div>
         <div id="sidebar">
@@ -468,8 +509,43 @@
         let hoverMarker = null;
         let liveUpdateTimeout = null;
         
-        // Initialize the map
+        // Welcome dialog functions
+        function closeWelcomeDialog() {
+            const dialog = document.getElementById('welcome-dialog');
+            dialog.style.opacity = '0';
+            dialog.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => {
+                dialog.style.display = 'none';
+            }, 300);
+        }
+        
+        // Close dialog when clicking outside the content
+        document.addEventListener('DOMContentLoaded', function() {
+            const dialog = document.getElementById('welcome-dialog');
+            dialog.addEventListener('click', closeWelcomeDialog);
+        });
+        
+        // Initialize the map with default location
         var map = L.map('map').setView([44.422633, -72.396017], 11);
+        
+        // Try to get user's location and center map on it
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    map.setView([userLat, userLng], 13);
+                },
+                function(error) {
+                    // Geolocation failed or denied, keep default location
+                    console.log('Geolocation not available or denied, using default location');
+                },
+                {
+                    timeout: 5000,
+                    enableHighAccuracy: false
+                }
+            );
+        }
 
         // Define base layers
         var topoLayer = L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}', {
