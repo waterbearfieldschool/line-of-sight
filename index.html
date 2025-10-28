@@ -373,7 +373,7 @@
                     </div>
                     <div class="field-group">
                         <label for="alt-a">Alt (m):</label>
-                        <input type="number" id="alt-a" value="0" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
+                        <input type="number" id="alt-a" value="1" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
                     </div>
                 </div>
                 
@@ -384,7 +384,7 @@
                     </div>
                     <div class="field-group">
                         <label for="alt-b">Alt (m):</label>
-                        <input type="number" id="alt-b" value="0" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
+                        <input type="number" id="alt-b" value="1" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
                     </div>
                 </div>
             </div>
@@ -427,7 +427,7 @@
                 </div>
             </div>
             
-            <!-- <div class="info-section">
+            <div class="info-section">
                 <h3>About</h3>
                 <div style="font-size: 0.85em; line-height: 1.4; color: #555;">
                     <p style="margin: 0 0 8px 0;">This tool calculates line-of-sight between two points by:</p>
@@ -439,7 +439,7 @@
                     </ul>
                     <p style="margin: 8px 0 0 0;"><strong>Fresnel zone:</strong> The calculation includes 60% of the first Fresnel zone clearance (assumed 915 MHz frequency) to account for radio wave diffraction effects.</p>
                 </div>
-            </div> -->
+            </div>
             
             <div class="info-section">
                 <a href="https://github.com/waterbearfieldschool/line-of-sight" target="_blank" class="github-link">
@@ -517,7 +517,8 @@
                 draggable: true
             }).addTo(map);
             
-            marker.bindPopup(`Point ${label}<br>Lat: ${latlng.lat.toFixed(6)}<br>Lng: ${latlng.lng.toFixed(6)}`);
+            const altValue = label === 'A' ? document.getElementById('alt-a').value : document.getElementById('alt-b').value;
+            marker.bindPopup(`Point ${label}<br>Lat: ${latlng.lat.toFixed(6)}<br>Lng: ${latlng.lng.toFixed(6)}<br>Alt: ${altValue} m`);
             
             // Add drag event listener
             const pointIndex = selectedPoints.length - 1;
@@ -621,7 +622,8 @@
                     draggable: true
                 }).addTo(map);
                 
-                marker.bindPopup(`Point ${pointLabel}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lon.toFixed(6)}`);
+                const altValue = pointLabel === 'A' ? document.getElementById('alt-a').value : document.getElementById('alt-b').value;
+                marker.bindPopup(`Point ${pointLabel}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lon.toFixed(6)}<br>Alt: ${altValue} m`);
                 
                 // Add drag event listeners
                 setupMarkerDragEvents(marker, pointIndex);
@@ -634,7 +636,8 @@
                 // Update marker position
                 if (markers[pointIndex]) {
                     markers[pointIndex].setLatLng(newLatLng);
-                    markers[pointIndex].setPopupContent(`Point ${pointLabel}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lon.toFixed(6)}`);
+                    const altValue = pointLabel === 'A' ? document.getElementById('alt-a').value : document.getElementById('alt-b').value;
+                    markers[pointIndex].setPopupContent(`Point ${pointLabel}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lon.toFixed(6)}<br>Alt: ${altValue} m`);
                 }
             }
             
@@ -689,7 +692,8 @@
                 selectedPoints[pointIndex] = e.target.getLatLng();
                 updatePointFields();
                 const newLabel = pointIndex === 0 ? 'A' : 'B';
-                marker.setPopupContent(`Point ${newLabel}<br>Lat: ${e.target.getLatLng().lat.toFixed(6)}<br>Lng: ${e.target.getLatLng().lng.toFixed(6)}`);
+                const altValue = newLabel === 'A' ? document.getElementById('alt-a').value : document.getElementById('alt-b').value;
+                marker.setPopupContent(`Point ${newLabel}<br>Lat: ${e.target.getLatLng().lat.toFixed(6)}<br>Lng: ${e.target.getLatLng().lng.toFixed(6)}<br>Alt: ${altValue} m`);
                 
                 if (selectedPoints.length === 2) {
                     drawPath(); // Still don't auto-fit after drag
@@ -908,16 +912,16 @@
             if (selectedPoints.length === 2) {
                 if (orderedPoints[0] === selectedPoints[0]) {
                     // A is leftmost
-                    antenna1Height = parseFloat(document.getElementById('alt-a').value) || 0;
-                    antenna2Height = parseFloat(document.getElementById('alt-b').value) || 0;
+                    antenna1Height = parseFloat(document.getElementById('alt-a').value) || 1;
+                    antenna2Height = parseFloat(document.getElementById('alt-b').value) || 1;
                 } else {
                     // B is leftmost
-                    antenna1Height = parseFloat(document.getElementById('alt-b').value) || 0;
-                    antenna2Height = parseFloat(document.getElementById('alt-a').value) || 0;
+                    antenna1Height = parseFloat(document.getElementById('alt-b').value) || 1;
+                    antenna2Height = parseFloat(document.getElementById('alt-a').value) || 1;
                 }
             } else {
-                antenna1Height = parseFloat(document.getElementById('alt-a').value) || 0;
-                antenna2Height = parseFloat(document.getElementById('alt-b').value) || 0;
+                antenna1Height = parseFloat(document.getElementById('alt-a').value) || 1;
+                antenna2Height = parseFloat(document.getElementById('alt-b').value) || 1;
             }
             
             return { antenna1Height, antenna2Height };
