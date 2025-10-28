@@ -11,12 +11,18 @@
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
         }
         
         #container {
             display: flex;
             height: 100vh;
             flex-direction: row;
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
         }
         
         #map {
@@ -26,8 +32,8 @@
         }
         
         #sidebar {
-            width: 420px;
-            min-width: 320px;
+            width: 500px;
+            min-width: 400px;
             background: #f5f5f5;
             border-left: 1px solid #ddd;
             overflow-y: auto;
@@ -37,37 +43,93 @@
         
         /* Mobile responsive design */
         @media (max-width: 768px) {
+            * {
+                box-sizing: border-box;
+            }
+            
+            html, body {
+                width: 100%;
+                max-width: 100%;
+                overflow-x: hidden;
+            }
+            
             #container {
                 flex-direction: column;
                 height: auto;
                 min-height: 100vh;
+                display: flex;
+                width: 100%;
+                max-width: 100%;
+                overflow-x: hidden;
+                margin: 0;
+                padding: 0;
             }
             
             #map {
                 height: 50vh;
                 min-height: 300px;
-                order: 1;
+                order: 2;
+                width: 100%;
+                max-width: 100%;
+                margin: 0;
             }
             
             #sidebar {
                 width: 100%;
                 min-width: auto;
+                max-width: 100%;
                 border-left: none;
-                border-top: 1px solid #ddd;
-                padding: 0 15px 15px 15px;
-                order: 2;
+                padding: 0;
+                margin: 0;
                 height: auto;
                 max-height: none;
+                display: contents;
+            }
+            
+            .point-entry {
+                margin: 5px;
+                order: 1;
+                width: calc(100% - 10px);
+                max-width: calc(100% - 10px);
+                padding: 8px;
+            }
+            
+            .info-section {
+                order: 3;
+                width: calc(100% - 10px);
+                max-width: calc(100% - 10px);
+                margin: 5px;
+                padding: 8px;
+            }
+            
+            .point-fields {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .field-group {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .field-group input {
+                max-width: 100%;
             }
         }
         
         @media (max-width: 480px) {
-            #sidebar {
-                padding: 0 10px 10px 10px;
+            .point-entry {
+                margin: 3px;
+                width: calc(100% - 6px);
+                max-width: calc(100% - 6px);
+                padding: 6px;
             }
             
             .info-section {
-                padding: 10px;
+                margin: 3px;
+                width: calc(100% - 6px);
+                max-width: calc(100% - 6px);
+                padding: 6px;
             }
             
             #map {
@@ -82,12 +144,24 @@
             margin: 20px 0 10px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        @media (max-width: 768px) {
+            #elevation-profile {
+                height: 250px;
+                margin: 5px 0;
+                width: calc(100% - 10px);
+                max-width: calc(100% - 10px);
+            }
         }
         
         @media (max-width: 480px) {
             #elevation-profile {
-                height: 250px;
-                margin: 15px 0 8px 0;
+                height: 220px;
+                margin: 3px 0;
+                width: calc(100% - 6px);
+                max-width: calc(100% - 6px);
             }
         }
         
@@ -169,56 +243,72 @@
             }
         }
         
-        .antenna-controls {
-            margin: 15px 0;
-            padding: 10px;
+        .point-entries {
             background: #f8f9fa;
             border-radius: 4px;
             border: 1px solid #dee2e6;
+            padding: 10px;
         }
         
-        .antenna-input {
+        .point-entry {
+            padding: 8px;
+            background: white;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+        
+        .point-fields {
+            display: grid;
+            grid-template-columns: 1fr 150px;
+            gap: 8px;
+        }
+        
+        .field-group {
             display: flex;
-            justify-content: space-between;
+            flex-direction: row;
             align-items: center;
-            margin: 8px 0;
+            gap: 6px;
         }
         
-        .antenna-input label {
+        .field-group label {
+            font-size: 0.85em;
             font-weight: bold;
-            margin-right: 10px;
+            color: #555;
+            white-space: nowrap;
         }
         
-        .antenna-input input {
-            width: 80px;
-            padding: 4px 8px;
+        .field-group input {
+            width: 100%;
+            padding: 4px 6px;
             border: 1px solid #ddd;
             border-radius: 3px;
-            text-align: right;
+            font-size: 0.9em;
+            box-sizing: border-box;
         }
         
-        .antenna-input span {
-            margin-left: 5px;
+        .field-group input[type="text"] {
+            min-width: 140px;
+        }
+        
+        .field-group span {
+            font-size: 0.8em;
             color: #666;
-            font-size: 0.9em;
+            margin-top: 1px;
         }
         
         @media (max-width: 480px) {
-            .antenna-input {
-                flex-direction: column;
-                align-items: flex-start;
-                margin: 12px 0;
+            .point-fields {
+                grid-template-columns: 1fr 130px;
+                gap: 4px;
             }
             
-            .antenna-input label {
-                margin-bottom: 5px;
-                margin-right: 0;
+            .field-group input {
+                padding: 6px 4px;
+                font-size: 14px;
             }
             
-            .antenna-input input {
-                width: 100px;
-                padding: 8px 12px;
-                font-size: 16px;
+            .field-group input[type="text"] {
+                min-width: 120px;
             }
         }
         
@@ -272,29 +362,32 @@
     <div id="container">
         <div id="map"></div>
         <div id="sidebar">
-            <h1 class="page-title">Line of Sight Analysis</h1>
-            
-            <div class="info-section">
-                <div class="antenna-controls">
-                    <div class="antenna-input">
-                        <label for="antenna1-height">Point A:</label>
-                        <input type="number" id="antenna1-height" value="10" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
-                        <span>meters</span>
+            <div class="point-entry" style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px; border: 1px solid #ddd;">
+                <div class="point-fields">
+                    <div class="field-group">
+                        <label for="latlon-a">A (lat,lon):</label>
+                        <input type="text" id="latlon-a" placeholder="44.422633,-72.396017" oninput="updateMarkerFromInput('A')">
                     </div>
-                    <div class="antenna-input">
-                        <label for="antenna2-height">Point B:</label>
-                        <input type="number" id="antenna2-height" value="10" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
-                        <span>meters</span>
+                    <div class="field-group">
+                        <label for="alt-a">Alt (m):</label>
+                        <input type="number" id="alt-a" value="10" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
                     </div>
                 </div>
-                <div class="controls">
-                    <button class="btn" onclick="clearPoints()">Clear Points</button>
-                    <button class="btn" onclick="analyzeLineOfSight()">Analyze</button>
+                
+                <div class="point-fields" style="margin-top: 10px;">
+                    <div class="field-group">
+                        <label for="latlon-b">B (lat,lon):</label>
+                        <input type="text" id="latlon-b" placeholder="44.422633,-72.396017" oninput="updateMarkerFromInput('B')">
+                    </div>
+                    <div class="field-group">
+                        <label for="alt-b">Alt (m):</label>
+                        <input type="number" id="alt-b" value="10" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
+                    </div>
                 </div>
             </div>
             
             <div class="info-section">
-                <h3>Elevation Profile</h3>
+                <h3 id="elevation-profile-header">Elevation Profile</h3>
                 <div id="elevation-profile"></div>
             </div>
             
@@ -408,56 +501,20 @@
             
             // Add drag event listener
             const pointIndex = selectedPoints.length - 1;
-            marker.on('dragstart', function(e) {
-                // Disable map dragging and zoom during marker drag
-                map.dragging.disable();
-                map.touchZoom.disable();
-                map.doubleClickZoom.disable();
-                map.scrollWheelZoom.disable();
-                map.boxZoom.disable();
-                map.keyboard.disable();
-            });
-            
-            marker.on('drag', function(e) {
-                selectedPoints[pointIndex] = e.target.getLatLng();
-                updatePointInfo();
-                if (selectedPoints.length === 2) {
-                    drawPath(); // Don't auto-fit during drag
-                }
-            });
-            
-            marker.on('dragend', function(e) {
-                // Re-enable map interactions
-                map.dragging.enable();
-                map.touchZoom.enable();
-                map.doubleClickZoom.enable();
-                map.scrollWheelZoom.enable();
-                map.boxZoom.enable();
-                map.keyboard.enable();
-                
-                selectedPoints[pointIndex] = e.target.getLatLng();
-                updatePointInfo();
-                const newLabel = pointIndex === 0 ? 'A' : 'B';
-                marker.setPopupContent(`Point ${newLabel}<br>Lat: ${e.target.getLatLng().lat.toFixed(6)}<br>Lng: ${e.target.getLatLng().lng.toFixed(6)}`);
-                
-                if (selectedPoints.length === 2) {
-                    drawPath(); // Still don't auto-fit after drag
-                    // Auto-analyze after drag
-                    setTimeout(() => {
-                        if (!isAnalyzing) {
-                            analyzeLineOfSight();
-                        }
-                    }, 500);
-                }
-            });
+            setupMarkerDragEvents(marker, pointIndex);
             
             markers.push(marker);
             
-            updatePointInfo();
+            updatePointFields();
             
             if (selectedPoints.length === 2) {
                 drawPath(true); // Auto-fit when first placing points
-                // Two points selected
+                // Automatically analyze when two points are placed
+                setTimeout(() => {
+                    if (!isAnalyzing) {
+                        analyzeLineOfSight();
+                    }
+                }, 100);
             }
         }
 
@@ -494,8 +551,165 @@
             }
         }
 
-        function updatePointInfo() {
-            // Point info display removed from UI
+        function updatePointFields() {
+            // Update the point entry fields with current coordinates
+            if (selectedPoints.length >= 1) {
+                document.getElementById('latlon-a').value = `${selectedPoints[0].lat.toFixed(6)},${selectedPoints[0].lng.toFixed(6)}`;
+            } else {
+                document.getElementById('latlon-a').value = '';
+            }
+            
+            if (selectedPoints.length >= 2) {
+                document.getElementById('latlon-b').value = `${selectedPoints[1].lat.toFixed(6)},${selectedPoints[1].lng.toFixed(6)}`;
+            } else {
+                document.getElementById('latlon-b').value = '';
+            }
+        }
+
+        function updateMarkerFromInput(pointLabel) {
+            const latlonId = pointLabel === 'A' ? 'latlon-a' : 'latlon-b';
+            const pointIndex = pointLabel === 'A' ? 0 : 1;
+            
+            const latlonValue = document.getElementById(latlonId).value.trim();
+            
+            // Parse lat,lon format with validation
+            const coords = parseLatLonInput(latlonValue);
+            if (!coords) {
+                // Invalid format or coordinates, add visual feedback
+                document.getElementById(latlonId).style.borderColor = '#dc3545';
+                document.getElementById(latlonId).style.backgroundColor = '#fff5f5';
+                return;
+            }
+            
+            // Valid coordinates, reset styling
+            document.getElementById(latlonId).style.borderColor = '#ddd';
+            document.getElementById(latlonId).style.backgroundColor = '';
+            
+            const { lat, lon } = coords;
+            
+            const newLatLng = L.latLng(lat, lon);
+            
+            // If this is a new point (not yet in selectedPoints)
+            if (pointIndex >= selectedPoints.length) {
+                // Add new point
+                selectedPoints.push(newLatLng);
+                
+                // Create new marker
+                const marker = L.marker(newLatLng, {
+                    icon: createCustomMarker(pointLabel),
+                    title: `Point ${pointLabel}`,
+                    draggable: true
+                }).addTo(map);
+                
+                marker.bindPopup(`Point ${pointLabel}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lon.toFixed(6)}`);
+                
+                // Add drag event listeners
+                setupMarkerDragEvents(marker, pointIndex);
+                markers.push(marker);
+                
+            } else {
+                // Update existing point
+                selectedPoints[pointIndex] = newLatLng;
+                
+                // Update marker position
+                if (markers[pointIndex]) {
+                    markers[pointIndex].setLatLng(newLatLng);
+                    markers[pointIndex].setPopupContent(`Point ${pointLabel}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lon.toFixed(6)}`);
+                }
+            }
+            
+            // Update path and analysis if we have two points
+            if (selectedPoints.length === 2) {
+                drawPath();
+                // Auto-analyze after coordinate change
+                setTimeout(() => {
+                    if (!isAnalyzing) {
+                        analyzeLineOfSight();
+                    }
+                }, 300);
+            } else if (selectedPoints.length === 1) {
+                // If only one point, clear any existing path/analysis
+                if (pathLine) {
+                    map.removeLayer(pathLine);
+                    pathLine = null;
+                }
+                clearElevationMarkers();
+                clearElevationProfile();
+            }
+        }
+
+        function setupMarkerDragEvents(marker, pointIndex) {
+            marker.on('dragstart', function(e) {
+                // Disable map dragging and zoom during marker drag
+                map.dragging.disable();
+                map.touchZoom.disable();
+                map.doubleClickZoom.disable();
+                map.scrollWheelZoom.disable();
+                map.boxZoom.disable();
+                map.keyboard.disable();
+            });
+            
+            marker.on('drag', function(e) {
+                selectedPoints[pointIndex] = e.target.getLatLng();
+                updatePointFields();
+                if (selectedPoints.length === 2) {
+                    drawPath(); // Don't auto-fit during drag
+                }
+            });
+            
+            marker.on('dragend', function(e) {
+                // Re-enable map interactions
+                map.dragging.enable();
+                map.touchZoom.enable();
+                map.doubleClickZoom.enable();
+                map.scrollWheelZoom.enable();
+                map.boxZoom.enable();
+                map.keyboard.enable();
+                
+                selectedPoints[pointIndex] = e.target.getLatLng();
+                updatePointFields();
+                const newLabel = pointIndex === 0 ? 'A' : 'B';
+                marker.setPopupContent(`Point ${newLabel}<br>Lat: ${e.target.getLatLng().lat.toFixed(6)}<br>Lng: ${e.target.getLatLng().lng.toFixed(6)}`);
+                
+                if (selectedPoints.length === 2) {
+                    drawPath(); // Still don't auto-fit after drag
+                    // Auto-analyze after drag
+                    setTimeout(() => {
+                        if (!isAnalyzing) {
+                            analyzeLineOfSight();
+                        }
+                    }, 500);
+                }
+            });
+        }
+
+        function parseLatLonInput(input) {
+            if (!input) return null;
+            
+            // Remove any whitespace and split by comma
+            const parts = input.replace(/\s/g, '').split(',');
+            
+            if (parts.length !== 2) {
+                return null; // Must have exactly 2 parts
+            }
+            
+            const lat = parseFloat(parts[0]);
+            const lon = parseFloat(parts[1]);
+            
+            // Validate lat/lon values
+            if (isNaN(lat) || isNaN(lon)) {
+                return null; // Invalid numbers
+            }
+            
+            if (lat < -90 || lat > 90) {
+                return null; // Latitude out of range
+            }
+            
+            if (lon < -180 || lon > 180) {
+                return null; // Longitude out of range
+            }
+            
+            return { lat, lon };
         }
 
         function clearPoints() {
@@ -519,7 +733,7 @@
                 pathLine = null;
             }
             
-            updatePointInfo();
+            updatePointFields();
             clearElevationProfile();
         }
 
@@ -674,16 +888,16 @@
             if (selectedPoints.length === 2) {
                 if (orderedPoints[0] === selectedPoints[0]) {
                     // A is leftmost
-                    antenna1Height = parseFloat(document.getElementById('antenna1-height').value) || 10;
-                    antenna2Height = parseFloat(document.getElementById('antenna2-height').value) || 10;
+                    antenna1Height = parseFloat(document.getElementById('alt-a').value) || 10;
+                    antenna2Height = parseFloat(document.getElementById('alt-b').value) || 10;
                 } else {
                     // B is leftmost
-                    antenna1Height = parseFloat(document.getElementById('antenna2-height').value) || 10;
-                    antenna2Height = parseFloat(document.getElementById('antenna1-height').value) || 10;
+                    antenna1Height = parseFloat(document.getElementById('alt-b').value) || 10;
+                    antenna2Height = parseFloat(document.getElementById('alt-a').value) || 10;
                 }
             } else {
-                antenna1Height = parseFloat(document.getElementById('antenna1-height').value) || 10;
-                antenna2Height = parseFloat(document.getElementById('antenna2-height').value) || 10;
+                antenna1Height = parseFloat(document.getElementById('alt-a').value) || 10;
+                antenna2Height = parseFloat(document.getElementById('alt-b').value) || 10;
             }
             
             return { antenna1Height, antenna2Height };
@@ -885,11 +1099,10 @@
             };
             
             const layout = {
-                title: `Elevation Profile (${leftLabel} --> ${rightLabel})`,
                 xaxis: {title: `Distance from ${leftLabel} (km)`},
                 yaxis: {title: 'Elevation (m)'},
                 showlegend: true,
-                margin: {l: 50, r: 50, t: 50, b: 50},
+                margin: {l: 50, r: 50, t: 20, b: 50},
                 hovermode: 'x unified'
             };
             
@@ -897,6 +1110,12 @@
                 responsive: true,
                 displayModeBar: false
             };
+            
+            // Update the header with point direction
+            const headerElement = document.getElementById('elevation-profile-header');
+            if (headerElement) {
+                headerElement.textContent = `Elevation Profile ${leftLabel} --> ${rightLabel}`;
+            }
             
             Plotly.newPlot('elevation-profile', [trace1, trace2], layout, config);
             
@@ -918,6 +1137,10 @@
 
         function clearElevationProfile() {
             document.getElementById('elevation-profile').innerHTML = '';
+            const headerElement = document.getElementById('elevation-profile-header');
+            if (headerElement) {
+                headerElement.textContent = 'Elevation Profile';
+            }
         }
 
         function addElevationMarkers() {
