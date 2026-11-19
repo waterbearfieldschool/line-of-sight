@@ -250,6 +250,81 @@
             border-color: #f1c4c2;
         }
 
+        /* Relay hop summary */
+        .hop-summary {
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .hop-summary .hop-verdict {
+            padding: 6px 10px;
+            font-weight: bold;
+        }
+
+        .hop-summary .hop-verdict.clear {
+            background: #e8f5e9;
+            color: #1e6b2e;
+        }
+
+        .hop-summary .hop-verdict.blocked {
+            background: #fff5f5;
+            color: #a12622;
+        }
+
+        .hop-summary table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .hop-summary td {
+            padding: 3px 10px;
+            border-top: 1px solid #eee;
+            color: #444;
+        }
+
+        .hop-summary td.status-clear {
+            color: #1e6b2e;
+            font-weight: bold;
+        }
+
+        .hop-summary td.status-blocked {
+            color: #a12622;
+            font-weight: bold;
+        }
+
+        .hop-summary tr.direct td {
+            color: #777;
+        }
+
+        .relay-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .relay-controls .btn {
+            margin: 0;
+            padding: 4px 12px;
+            font-size: 0.85em;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+
+        .relay-controls .btn:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        .relay-hint {
+            font-size: 0.75em;
+            color: #777;
+            line-height: 1.3;
+        }
+
         .info-section h3 {
             margin: 0 0 10px 0;
             color: #333;
@@ -404,8 +479,13 @@
             font-size: 14px;
             color: #333;
         }
-        
-        
+
+        .marker-label.relay {
+            border-color: #6f42c1;
+            color: #6f42c1;
+        }
+
+
         /* GitHub link */
         .github-link {
             background: #24292e;
@@ -470,6 +550,22 @@
                         <input type="number" id="alt-b" value="1" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
                     </div>
                 </div>
+
+                <div class="point-fields" style="margin-top: 10px;">
+                    <div class="field-group">
+                        <label for="latlon-r" title="Relay / repeater point (optional)">R (lat,lon):</label>
+                        <input type="text" id="latlon-r" placeholder="optional relay point" oninput="updateMarkerFromInput('R')">
+                    </div>
+                    <div class="field-group">
+                        <label for="alt-r">Alt (m):</label>
+                        <input type="number" id="alt-r" value="1" min="0" max="200" step="0.1" oninput="updateAnalysisLive()">
+                    </div>
+                </div>
+
+                <div class="relay-controls">
+                    <button id="relay-btn" class="btn" onclick="toggleRelay()" disabled>+ Add relay</button>
+                    <span class="relay-hint" id="relay-hint">Place A and B first, then add a relay point R to test a hop A &rarr; R &rarr; B.</span>
+                </div>
             </div>
             
             <div class="info-section">
@@ -481,6 +577,7 @@
                     </div>
                 </div>
                 <div id="analysis-status" class="analysis-status" hidden></div>
+                <div id="hop-summary" class="hop-summary" hidden></div>
                 <div id="elevation-profile"></div>
             </div>
             
@@ -508,6 +605,14 @@
                         Blocked Path (Red)
                     </div>
                     <div style="margin: 5px 0;">
+                        <span style="display: inline-block; width: 12px; height: 3px; background: repeating-linear-gradient(90deg, #888 0 3px, transparent 3px 6px); margin-right: 8px;"></span>
+                        Direct A&ndash;B path (faint, when a relay is used)
+                    </div>
+                    <div style="margin: 5px 0;">
+                        <span style="display: inline-block; width: 12px; height: 12px; background: white; border: 2px solid #6f42c1; border-radius: 50%; margin-right: 8px;"></span>
+                        Relay Point (R)
+                    </div>
+                    <div style="margin: 5px 0;">
                         <span style="display: inline-block; width: 12px; height: 12px; background: #0066ff; border: 2px solid white; border-radius: 50%; margin-right: 8px;"></span>
                         Chart Hover Position
                     </div>
@@ -526,6 +631,7 @@
                         <li style="margin-bottom: 4px;">Checking if terrain blocks this line</li>
                     </ul>
                     <p style="margin: 8px 0 0 0;"><strong>Fresnel zone:</strong> The calculation requires 60% of the first Fresnel zone to be clear (assumed 915 MHz frequency) to account for radio wave diffraction effects. The dotted line on the profile marks this boundary &mdash; terrain above it counts as an obstruction.</p>
+                    <p style="margin: 8px 0 0 0;"><strong>Relay hop:</strong> Add a relay point R to check a two-hop path A &rarr; R &rarr; B. Each leg is analyzed separately (using R's antenna height at both ends), and the hop works only if both legs are clear. The profile then follows the route through R.</p>
                     <p style="margin: 8px 0 0 0;"><strong>Elevation data:</strong> <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank">Terrain Tiles</a> (Mapzen / AWS Open Data; sources include USGS 3DEP ~10 m in the US, SRTM and others worldwide), with <a href="https://open-meteo.com/en/docs/elevation-api" target="_blank">Open-Meteo</a> (Copernicus DEM, ~90 m) as a fallback. Bare-earth terrain only: trees and buildings are not included.</p>
                 </div>
             </div>
@@ -552,17 +658,22 @@
         const FRESNEL_CLEARANCE = 0.6;    // Fraction of first Fresnel zone that must be clear
         const EARTH_RADIUS_M = 6371000;
         const K_FACTOR = 4 / 3;           // Effective Earth radius factor (standard atmospheric refraction)
-        const POINT_LABELS = ['A', 'B'];
+        const POINT_LABELS = ['A', 'B', 'R'];
+        const LATLON_INPUT_IDS = ['latlon-a', 'latlon-b', 'latlon-r'];
+        const ALT_INPUT_IDS = ['alt-a', 'alt-b', 'alt-r'];
+        const RELAY = 2;                  // Index of the optional relay point
 
         // Global variables
-        // selectedPoints[0] is always A and selectedPoints[1] is always B (either may be unset)
+        // selectedPoints[0] is always A, [1] is always B and [2] is the optional relay R (any may be unset)
         let selectedPoints = [];
         let markers = [];
-        let pathLine = null;
-        let elevationData = [];
+        let pathLayer = null;             // Map layer group holding the path line(s)
+        let links = [];                   // Analyzed route legs (A–B, or A–R and R–B), west to east
+        let directLink = null;            // Direct A–B link, analyzed for comparison when a relay is used
+        let elevationData = [];           // Route samples (all legs joined) with distance along the route
         let elevationMarkers = [];
         let isAnalyzing = false;
-        let lineOfSightClear = null;      // true = clear, false = blocked, null = not analyzed
+        let lineOfSightClear = null;      // Whole route: true = clear, false = blocked, null = not analyzed
         let hoverMarker = null;
         let liveUpdateTimeout = null;
         let analysisTimeout = null;
@@ -721,14 +832,22 @@
             return Boolean(selectedPoints[0] && selectedPoints[1]);
         }
 
+        function hasRelay() {
+            return Boolean(selectedPoints[RELAY]);
+        }
+
+        function getAntennaHeight(index) {
+            return parseFloat(document.getElementById(ALT_INPUT_IDS[index]).value) || 1;
+        }
+
         function pointPopupContent(index) {
             const p = selectedPoints[index];
-            const label = POINT_LABELS[index];
-            const altValue = document.getElementById(index === 0 ? 'alt-a' : 'alt-b').value;
+            const label = index === RELAY ? 'R (relay)' : POINT_LABELS[index];
+            const altValue = document.getElementById(ALT_INPUT_IDS[index]).value;
             return `Point ${label}<br>Lat: ${p.lat.toFixed(6)}<br>Lng: ${p.lng.toFixed(6)}<br>Alt: ${altValue} m`;
         }
 
-        // Create or move the marker for point A (index 0) or B (index 1)
+        // Create or move the marker for point A (index 0), B (index 1) or relay R (index 2)
         function setPoint(index, latlng) {
             selectedPoints[index] = latlng;
 
@@ -751,6 +870,7 @@
 
         // Debounced analysis: rapid edits/drags collapse into a single elevation request
         function scheduleAnalysis(delay = 300) {
+            analysisSeq++; // Points changed: any in-flight result is now stale
             clearTimeout(analysisTimeout);
             analysisTimeout = setTimeout(analyzeLineOfSight, delay);
         }
@@ -765,7 +885,7 @@
 
         function createCustomMarker(label) {
             return L.divIcon({
-                className: 'marker-label',
+                className: label === 'R' ? 'marker-label relay' : 'marker-label',
                 html: label,
                 iconSize: [24, 24],
                 iconAnchor: [12, 12]
@@ -784,56 +904,146 @@
             }
         }
 
+        // Point indices along the route, starting from the leftmost (westernmost) endpoint:
+        // [A, B] / [B, A], or with a relay [A, R, B] / [B, R, A]
+        function getRoute() {
+            if (!bothPointsSet()) return [];
+            const [left, right] = selectedPoints[0].lng <= selectedPoints[1].lng ? [0, 1] : [1, 0];
+            return hasRelay() ? [left, RELAY, right] : [left, right];
+        }
+
         function getOrderedPoints() {
             if (!bothPointsSet()) return selectedPoints.filter(Boolean);
-            
-            // Order points from leftmost (westernmost) to rightmost (easternmost)
-            if (selectedPoints[0].lng <= selectedPoints[1].lng) {
-                return [selectedPoints[0], selectedPoints[1]]; // A to B
-            } else {
-                return [selectedPoints[1], selectedPoints[0]]; // B to A
+            return getRoute().map(index => selectedPoints[index]);
+        }
+
+        // Find an analyzed link between two points (in either direction)
+        function findLink(i, j) {
+            const candidates = directLink ? links.concat([directLink]) : links;
+            return candidates.find(l => (l.from === i && l.to === j) || (l.from === j && l.to === i)) || null;
+        }
+
+        function statusColor(clear) {
+            // Green if clear, red if blocked, grey if not analyzed
+            return clear === true ? '#28a745' : clear === false ? '#dc3545' : '#6c757d';
+        }
+
+        function clearPath() {
+            if (pathLayer) {
+                map.removeLayer(pathLayer);
+                pathLayer = null;
             }
         }
 
         function drawPath(autoFit = false) {
-            if (pathLine) {
-                map.removeLayer(pathLine);
-            }
-            
-            // Choose color based on line of sight status: green if clear, red if blocked, grey if not analyzed
-            const pathColor = lineOfSightClear === true ? '#28a745' : lineOfSightClear === false ? '#dc3545' : '#6c757d';
+            clearPath();
+            if (!bothPointsSet()) return;
+            pathLayer = L.featureGroup().addTo(map);
 
-            pathLine = L.polyline(selectedPoints, {
-                color: pathColor,
-                weight: 3,
-                opacity: 0.8,
-                dashArray: lineOfSightClear === true ? null : '10, 5' // Solid if clear, dashed otherwise
-            }).addTo(map);
+            const route = getRoute();
+            const linkStatus = (i, j) => {
+                const link = findLink(i, j);
+                return link ? link.clear : null;
+            };
+
+            // With a relay, show the direct A–B path faintly for comparison
+            if (hasRelay()) {
+                L.polyline([selectedPoints[0], selectedPoints[1]], {
+                    color: statusColor(linkStatus(0, 1)),
+                    weight: 2,
+                    opacity: 0.35,
+                    dashArray: '4, 6',
+                    interactive: false
+                }).addTo(pathLayer);
+            }
+
+            // Each leg of the route, colored by its own result
+            for (let k = 0; k < route.length - 1; k++) {
+                const clear = linkStatus(route[k], route[k + 1]);
+                L.polyline([selectedPoints[route[k]], selectedPoints[route[k + 1]]], {
+                    color: statusColor(clear),
+                    weight: 3,
+                    opacity: 0.8,
+                    dashArray: clear === true ? null : '10, 5' // Solid if clear, dashed otherwise
+                }).addTo(pathLayer);
+            }
 
             // Only auto-fit when explicitly requested (not during drag)
             if (autoFit) {
-                const group = new L.featureGroup(markers.filter(Boolean).concat([pathLine]));
+                const group = new L.featureGroup(markers.filter(Boolean).concat([pathLayer]));
                 map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        // Add a relay at the midpoint of A–B (the user can then drag it), or remove the existing relay
+        function toggleRelay() {
+            if (hasRelay()) {
+                removeRelay();
+                return;
+            }
+            if (!bothPointsSet()) return;
+
+            const a = selectedPoints[0], b = selectedPoints[1];
+            setPoint(RELAY, L.latLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2));
+            markers[RELAY].openPopup();
+            updatePointFields();
+            drawPath();
+            scheduleAnalysis(100);
+        }
+
+        function removeRelay() {
+            if (markers[RELAY]) map.removeLayer(markers[RELAY]);
+            markers[RELAY] = null;
+            selectedPoints[RELAY] = null;
+            updatePointFields();
+            if (bothPointsSet()) {
+                drawPath();
+                scheduleAnalysis(100);
+            }
+        }
+
+        function updateRelayControls() {
+            const button = document.getElementById('relay-btn');
+            const hint = document.getElementById('relay-hint');
+            if (hasRelay()) {
+                button.disabled = false;
+                button.textContent = '× Remove relay';
+                hint.innerHTML = 'Drag R on the map (or edit its coordinates) to find a spot where both legs are clear.';
+            } else {
+                button.disabled = !bothPointsSet();
+                button.textContent = '+ Add relay';
+                hint.innerHTML = bothPointsSet()
+                    ? 'Add a relay point R to test a hop A &rarr; R &rarr; B.'
+                    : 'Place A and B first, then add a relay point R to test a hop A &rarr; R &rarr; B.';
             }
         }
 
         function updatePointFields() {
             // Update the point entry fields with current coordinates
-            ['latlon-a', 'latlon-b'].forEach((id, index) => {
+            LATLON_INPUT_IDS.forEach((id, index) => {
                 const p = selectedPoints[index];
                 const input = document.getElementById(id);
                 input.value = p ? `${p.lat.toFixed(6)},${p.lng.toFixed(6)}` : '';
                 input.style.borderColor = '';
                 input.style.backgroundColor = '';
             });
+            updateRelayControls();
         }
 
         function updateMarkerFromInput(pointLabel) {
-            const latlonId = pointLabel === 'A' ? 'latlon-a' : 'latlon-b';
-            const pointIndex = pointLabel === 'A' ? 0 : 1;
-            
+            const pointIndex = POINT_LABELS.indexOf(pointLabel);
+            const latlonId = LATLON_INPUT_IDS[pointIndex];
+
             const latlonValue = document.getElementById(latlonId).value.trim();
-            
+
+            // Emptying the relay field removes the relay
+            if (pointIndex === RELAY && !latlonValue) {
+                if (hasRelay()) removeRelay();
+                document.getElementById(latlonId).style.borderColor = '';
+                document.getElementById(latlonId).style.backgroundColor = '';
+                return;
+            }
+
             // Parse lat,lon format with validation
             const coords = parseLatLonInput(latlonValue);
             if (!coords) {
@@ -849,19 +1059,17 @@
             
             const newLatLng = L.latLng(coords.lat, coords.lon);
             setPoint(pointIndex, newLatLng);
+            updateRelayControls();
 
             if (bothPointsSet()) {
-                // Fit bounds to both points, update path and re-analyze
+                // Fit bounds to all points, update path and re-analyze
                 map.fitBounds(new L.featureGroup(markers.filter(Boolean)).getBounds().pad(0.1));
                 drawPath();
                 scheduleAnalysis(300);
             } else {
-                // Only one point: center on it and clear any existing path/analysis
+                // A or B missing: center on the new point and clear any existing path/analysis
                 map.setView(newLatLng, Math.max(map.getZoom(), 13));
-                if (pathLine) {
-                    map.removeLayer(pathLine);
-                    pathLine = null;
-                }
+                clearPath();
                 clearElevationMarkers();
                 clearElevationProfile();
             }
@@ -950,7 +1158,11 @@
             const lonB = selectedPoints[1].lng.toFixed(6);
             const altB = document.getElementById('alt-b').value || '1';
             
-            const pointsText = `A: ${latA}, ${lonA}, ${altA}; B: ${latB}, ${lonB}, ${altB}`;
+            let pointsText = `A: ${latA}, ${lonA}, ${altA}; B: ${latB}, ${lonB}, ${altB}`;
+            if (hasRelay()) {
+                const r = selectedPoints[RELAY];
+                pointsText += `; R: ${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}, ${document.getElementById('alt-r').value || '1'}`;
+            }
             
             // Copy to clipboard
             navigator.clipboard.writeText(pointsText).then(() => {
@@ -1033,25 +1245,24 @@
             updateStatus('');
 
             selectedPoints = [];
+            links = [];
+            directLink = null;
             elevationData = [];
             lineOfSightClear = null;
 
             // Remove markers
             markers.filter(Boolean).forEach(marker => map.removeLayer(marker));
             markers = [];
-            
+
             // Remove elevation markers
             clearElevationMarkers();
-            
+
             // Remove hover marker
             clearHoverMarker();
-            
-            // Remove path line
-            if (pathLine) {
-                map.removeLayer(pathLine);
-                pathLine = null;
-            }
-            
+
+            // Remove path line(s)
+            clearPath();
+
             updatePointFields();
             clearElevationProfile();
         }
@@ -1155,16 +1366,9 @@
                 if (marker) marker.setPopupContent(pointPopupContent(index));
             });
 
-            if (bothPointsSet() && elevationData.length > 0 && !isAnalyzing) {
-                // Recalculate with new antenna heights immediately (no setTimeout delay)
-                const hasLineOfSight = calculateLineOfSight();
-                lineOfSightClear = hasLineOfSight;
-                
-                drawPath(); // Update path color
-                plotElevationProfile(); // Update profile with new antenna heights
-                addElevationMarkers(); // Update obstruction markers
-                
-                // Line of sight status reflected in graph color
+            if (bothPointsSet() && links.length > 0 && !isAnalyzing) {
+                // Recalculate with new antenna heights immediately (no refetch needed)
+                renderAnalysis();
             }
         }
 
@@ -1180,24 +1384,30 @@
             updateStatus('Fetching elevation data…');
 
             try {
-                const profile = await getElevationProfile();
+                // One link per leg of the route, plus the direct A–B link for comparison when a relay is used
+                const route = getRoute();
+                const withRelay = hasRelay();
+                const pairs = route.slice(0, -1).map((from, k) => [from, route[k + 1]]);
+                if (withRelay) pairs.push([route[0], route[route.length - 1]]);
+
+                const fetched = await Promise.all(pairs.map(async ([from, to]) => ({
+                    from,
+                    to,
+                    samples: await getElevationProfile(selectedPoints[from], selectedPoints[to])
+                })));
                 if (seq !== analysisSeq) return; // Superseded by a newer analysis
 
-                elevationData = profile;
-                lineOfSightClear = calculateLineOfSight();
+                links = fetched.slice(0, route.length - 1);
+                directLink = withRelay ? fetched[fetched.length - 1] : null;
                 updateStatus('');
-
-                updateDistanceInfoWithElevation();
-                plotElevationProfile();
-                addElevationMarkers();
-                drawPath(); // Update path color based on result
-
-                // Line of sight status reflected in graph color
+                renderAnalysis();
             } catch (error) {
                 if (seq !== analysisSeq) return;
                 console.error('Error during analysis:', error);
 
                 // Don't show a result based on missing/stale data
+                links = [];
+                directLink = null;
                 elevationData = [];
                 lineOfSightClear = null;
                 clearElevationMarkers();
@@ -1210,34 +1420,35 @@
             }
         }
 
-        function getAntennaHeights() {
-            const orderedPoints = getOrderedPoints();
-            let antenna1Height, antenna2Height;
+        // Evaluate the fetched links with the current antenna heights and update the map, profile and summary
+        function renderAnalysis() {
+            // Join the legs into one route profile with distance measured along the route
+            let offset = 0;
+            elevationData = [];
+            links.forEach((link, k) => {
+                link.offset = offset;
+                const samples = k === 0 ? link.samples : link.samples.slice(1); // relay sample is shared by both legs
+                samples.forEach(s => elevationData.push({ ...s, distance: offset + s.distance }));
+                offset += link.samples[link.samples.length - 1].distance;
+            });
 
-            if (bothPointsSet()) {
-                if (orderedPoints[0] === selectedPoints[0]) {
-                    // A is leftmost
-                    antenna1Height = parseFloat(document.getElementById('alt-a').value) || 1;
-                    antenna2Height = parseFloat(document.getElementById('alt-b').value) || 1;
-                } else {
-                    // B is leftmost
-                    antenna1Height = parseFloat(document.getElementById('alt-b').value) || 1;
-                    antenna2Height = parseFloat(document.getElementById('alt-a').value) || 1;
-                }
-            } else {
-                antenna1Height = parseFloat(document.getElementById('alt-a').value) || 1;
-                antenna2Height = parseFloat(document.getElementById('alt-b').value) || 1;
-            }
-            
-            return { antenna1Height, antenna2Height };
+            links.forEach(link => { link.clear = isLinkClear(link); });
+            if (directLink) directLink.clear = isLinkClear(directLink);
+            lineOfSightClear = calculateLineOfSight();
+
+            updateDistanceInfoWithElevation();
+            plotElevationProfile();
+            addElevationMarkers();
+            drawPath(); // Update path colors based on result
+            updateHopSummary();
         }
 
-        // Fetch an elevation profile for the current points (leftmost to rightmost).
-        // Returns the profile instead of writing elevationData, so a slow request
+        // Fetch an elevation profile from start to end (distance measured from start).
+        // Returns the profile instead of writing global state, so a slow request
         // can never overwrite the results of a newer one.
-        async function getElevationProfile() {
-            const orderedPoints = getOrderedPoints();
-            const pathLength = calculateDistance(orderedPoints[0], orderedPoints[1]);
+        async function getElevationProfile(start, end) {
+            const orderedPoints = [start, end];
+            const pathLength = calculateDistance(start, end);
 
             const buildProfile = (coordinates, elevations) => coordinates.map((coord, i) => ({
                 distance: calculateDistance(orderedPoints[0], coord),
@@ -1381,17 +1592,18 @@
             return elevations;
         }
 
-        // Per-sample line-of-sight geometry shared by the check, the obstruction markers and the plot
-        function computeLineOfSightProfile() {
-            const n = elevationData.length;
+        // Per-sample line-of-sight geometry for one link (distances measured from the link's start),
+        // shared by the clear/blocked check, the obstruction markers and the plot
+        function computeLinkProfile(link) {
+            const samples = link.samples;
+            const n = samples.length;
             if (n < 2) return [];
 
-            const { antenna1Height, antenna2Height } = getAntennaHeights();
-            const totalDistance = elevationData[n - 1].distance;
-            const startHeight = elevationData[0].elevation + antenna1Height;
-            const endHeight = elevationData[n - 1].elevation + antenna2Height;
+            const totalDistance = samples[n - 1].distance;
+            const startHeight = samples[0].elevation + getAntennaHeight(link.from);
+            const endHeight = samples[n - 1].elevation + getAntennaHeight(link.to);
 
-            return elevationData.map((point, i) => {
+            return samples.map((point, i) => {
                 const d1 = point.distance;
                 const d2 = totalDistance - d1;
                 const ratio = totalDistance > 0 ? d1 / totalDistance : 0;
@@ -1414,10 +1626,55 @@
             });
         }
 
+        function isLinkClear(link) {
+            const profile = computeLinkProfile(link);
+            return profile.length >= 2 && !profile.some(p => p.blocked);
+        }
+
+        // The route works only if every leg is clear
         function calculateLineOfSight() {
-            const profile = computeLineOfSightProfile();
-            if (profile.length < 2) return false;
-            return !profile.some(p => p.blocked);
+            return links.length > 0 && links.every(isLinkClear);
+        }
+
+        function routeLabel(route) {
+            return route.map(index => POINT_LABELS[index]).join(' → ');
+        }
+
+        // Summary table shown when a relay is used: does the hop A → R → B work, and which leg fails
+        function updateHopSummary() {
+            const el = document.getElementById('hop-summary');
+            if (!hasRelay() || links.length < 2) {
+                el.hidden = true;
+                el.innerHTML = '';
+                return;
+            }
+
+            const describe = (from, to, extraClass = '') => {
+                const link = findLink(from, to);
+                if (!link) return '';
+                const km = (link.samples[link.samples.length - 1].distance / 1000).toFixed(2);
+                const worst = findLinkObstructions(link).reduce((m, o) => Math.max(m, o.clearanceNeeded), 0);
+                const status = link.clear
+                    ? '✓ Clear'
+                    : `✗ Blocked <span style="font-weight: normal;">(terrain ${worst.toFixed(1)} m into clearance zone)</span>`;
+                return `<tr class="${extraClass}">
+                    <td>${POINT_LABELS[from]} → ${POINT_LABELS[to]}${extraClass === 'direct' ? ' (direct)' : ''}</td>
+                    <td>${km} km</td>
+                    <td class="${link.clear ? 'status-clear' : 'status-blocked'}">${status}</td>
+                </tr>`;
+            };
+
+            const works = lineOfSightClear === true;
+            el.innerHTML = `
+                <div class="hop-verdict ${works ? 'clear' : 'blocked'}">
+                    Relay hop A → R → B: ${works ? '✓ works (both legs clear)' : '✗ does not work'}
+                </div>
+                <table>
+                    ${describe(0, RELAY)}
+                    ${describe(RELAY, 1)}
+                    ${describe(0, 1, 'direct')}
+                </table>`;
+            el.hidden = false;
         }
 
         function calculateFresnelRadius(d1, d2, frequencyMHz) {
@@ -1439,31 +1696,11 @@
         function plotElevationProfile() {
             if (elevationData.length === 0) return;
             
+            const route = links.map(l => l.from).concat([links[links.length - 1].to]);
+            const labels = route.map(index => POINT_LABELS[index]);
             const distances = elevationData.map(d => d.distance / 1000); // Convert to km
             const elevations = elevationData.map(d => d.elevation);
 
-            // Line of sight (with antenna heights and Earth curvature) and the Fresnel clearance boundary
-            const losProfile = computeLineOfSightProfile();
-            const losLine = losProfile.map(p => p.losHeight);
-            const fresnelLine = losProfile.map(p => p.requiredClearance);
-
-            // Fit the y-axis to the data (the terrain fill would otherwise force it down to 0 m)
-            const allHeights = elevations.concat(losLine, fresnelLine);
-            const yMin = Math.min(...allHeights);
-            const yMax = Math.max(...allHeights);
-            const yPad = Math.max(10, (yMax - yMin) * 0.1);
-            
-            // Determine which point is A and which is B based on ordering
-            const orderedPoints = getOrderedPoints();
-            let leftLabel, rightLabel;
-            if (orderedPoints[0] === selectedPoints[0]) {
-                leftLabel = 'A';
-                rightLabel = 'B';
-            } else {
-                leftLabel = 'B';
-                rightLabel = 'A';
-            }
-            
             const trace1 = {
                 x: distances,
                 y: elevations,
@@ -1474,36 +1711,61 @@
                 line: {color: 'brown'},
                 hovertemplate: '<extra></extra>' // Hide default hover tooltip
             };
-            
-            const trace2 = {
-                x: distances,
-                y: losLine,
-                type: 'scatter',
-                mode: 'lines',
-                name: 'Line of Sight',
-                line: {color: lineOfSightClear ? '#28a745' : '#dc3545', dash: 'dash'},
-                hovertemplate: '<extra></extra>' // Hide default hover tooltip
-            };
 
-            const trace3 = {
-                x: distances,
-                y: fresnelLine,
-                type: 'scatter',
-                mode: 'lines',
-                name: `${Math.round(FRESNEL_CLEARANCE * 100)}% Fresnel zone`,
-                line: {color: lineOfSightClear ? '#28a745' : '#dc3545', dash: 'dot', width: 1},
-                opacity: 0.7,
-                hovertemplate: '<extra></extra>' // Hide default hover tooltip
-            };
+            // Line of sight (with antenna heights and Earth curvature) and the Fresnel clearance
+            // boundary for each leg, colored by that leg's result
+            const traces = [trace1];
+            const allHeights = elevations.slice();
+            const pointHeights = []; // Antenna-top height at each route point, for the labels
+            links.forEach((link, k) => {
+                const profile = computeLinkProfile(link);
+                const x = profile.map(p => (link.offset + p.distance) / 1000);
+                const losLine = profile.map(p => p.losHeight);
+                const fresnelLine = profile.map(p => p.requiredClearance);
+                const color = statusColor(link.clear);
+                allHeights.push(...losLine, ...fresnelLine);
+                if (k === 0) pointHeights.push(losLine[0]);
+                pointHeights.push(losLine[losLine.length - 1]);
+
+                traces.push({
+                    x,
+                    y: losLine,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'Line of Sight',
+                    legendgroup: 'los',
+                    showlegend: k === 0,
+                    line: {color, dash: 'dash'},
+                    hovertemplate: '<extra></extra>' // Hide default hover tooltip
+                });
+                traces.push({
+                    x,
+                    y: fresnelLine,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: `${Math.round(FRESNEL_CLEARANCE * 100)}% Fresnel zone`,
+                    legendgroup: 'fresnel',
+                    showlegend: k === 0,
+                    line: {color, dash: 'dot', width: 1},
+                    opacity: 0.7,
+                    hovertemplate: '<extra></extra>' // Hide default hover tooltip
+                });
+            });
+
+            // Fit the y-axis to the data (the terrain fill would otherwise force it down to 0 m)
+            const yMin = Math.min(...allHeights);
+            const yMax = Math.max(...allHeights);
+            const yPad = Math.max(10, (yMax - yMin) * 0.1);
+            const yHeadroom = Math.max(20, (yMax - yMin) * 0.3); // Room above the highest point for the A/R/B labels
 
             const layout = {
                 xaxis: {
-                    title: `Distance from ${leftLabel} (km)`,
+                    title: links.length > 1 ? `Distance along route from ${labels[0]} (km)` : `Distance from ${labels[0]} (km)`,
                     fixedrange: true
                 },
                 yaxis: {
                     title: 'Elevation (m)',
-                    range: [yMin - yPad, yMax + yPad],
+                    range: [yMin - yPad, yMax + yHeadroom],
                     fixedrange: true
                 },
                 showlegend: true,
@@ -1526,56 +1788,48 @@
             // Update the header with point direction
             const headerElement = document.getElementById('elevation-profile-header');
             if (headerElement) {
-                headerElement.textContent = `Elevation Profile ${leftLabel} --> ${rightLabel}`;
+                headerElement.textContent = `Elevation Profile ${labels.join(' --> ')}`;
             }
-            
-            // Add point labels at start and end positions
-            const annotations = [
-                {
-                    x: distances[0],
-                    y: losLine[0],
-                    text: leftLabel,
+
+            // Add point labels at each point along the route (start, relay, end)
+            const routeDistances = links.map(l => l.offset / 1000).concat([distances[distances.length - 1]]);
+            layout.annotations = labels.map((label, k) => {
+                const color = route[k] === RELAY ? '#6f42c1' : '#333';
+                return {
+                    x: routeDistances[k],
+                    y: pointHeights[k],
+                    text: label,
                     showarrow: true,
                     arrowhead: 2,
                     arrowsize: 1,
                     arrowwidth: 2,
-                    arrowcolor: '#333',
+                    arrowcolor: color,
                     ax: 0,
                     ay: -30,
                     font: {
                         size: 14,
-                        color: '#333',
+                        color: color,
                         family: 'Arial, sans-serif'
                     },
                     bgcolor: 'rgba(255,255,255,0.8)',
-                    bordercolor: '#333',
+                    bordercolor: color,
                     borderwidth: 1
-                },
-                {
-                    x: distances[distances.length - 1],
-                    y: losLine[losLine.length - 1],
-                    text: rightLabel,
-                    showarrow: true,
-                    arrowhead: 2,
-                    arrowsize: 1,
-                    arrowwidth: 2,
-                    arrowcolor: '#333',
-                    ax: 0,
-                    ay: -30,
-                    font: {
-                        size: 14,
-                        color: '#333',
-                        family: 'Arial, sans-serif'
-                    },
-                    bgcolor: 'rgba(255,255,255,0.8)',
-                    bordercolor: '#333',
-                    borderwidth: 1
-                }
-            ];
-            
-            layout.annotations = annotations;
-            
-            Plotly.newPlot('elevation-profile', [trace1, trace2, trace3], layout, config);
+                };
+            });
+
+            // Mark the relay position with a vertical line
+            layout.shapes = routeDistances.slice(1, -1).map(x => ({
+                type: 'line',
+                xref: 'x',
+                yref: 'paper',
+                x0: x,
+                x1: x,
+                y0: 0,
+                y1: 1,
+                line: {color: '#6f42c1', width: 1, dash: 'dot'}
+            }));
+
+            Plotly.newPlot('elevation-profile', traces, layout, config);
             
             // Add hover event listeners
             document.getElementById('elevation-profile').on('plotly_hover', function(data) {
@@ -1600,14 +1854,18 @@
             if (headerElement) {
                 headerElement.textContent = 'Elevation Profile';
             }
+            const summary = document.getElementById('hop-summary');
+            summary.hidden = true;
+            summary.innerHTML = '';
         }
 
         function addElevationMarkers() {
             // Clear existing elevation markers
             clearElevationMarkers();
             
-            if (elevationData.length === 0) return;
-            
+            if (elevationData.length === 0 || links.length === 0) return;
+            const startLabel = POINT_LABELS[links[0].from];
+
             // Find the highest elevation points
             const elevations = elevationData.map(d => d.elevation);
             const maxElevation = Math.max(...elevations);
@@ -1646,14 +1904,11 @@
                     opacity: 1,
                     fillOpacity: 0.8
                 }).addTo(map);
-                
-                const orderedPoints = getOrderedPoints();
-                const distanceFromStart = calculateDistance(orderedPoints[0], {lat: peak.lat, lng: peak.lng});
-                
+
                 const popupContent = `
                     <strong>${isHighest ? 'Highest Point' : 'Peak'}</strong><br>
                     Elevation: ${peak.elevation.toFixed(1)} m (${(peak.elevation * 3.28084).toFixed(0)} ft)<br>
-                    Distance: ${(distanceFromStart / 1000).toFixed(2)} km from leftmost point
+                    Distance: ${(peak.distance / 1000).toFixed(2)} km along profile from ${startLabel}
                 `;
                 
                 elevationMarker.bindPopup(popupContent);
@@ -1671,14 +1926,11 @@
                     opacity: 1,
                     fillOpacity: 0.9
                 }).addTo(map);
-                
-                const orderedPoints = getOrderedPoints();
-                const distanceFromStart = calculateDistance(orderedPoints[0], {lat: obstruction.lat, lng: obstruction.lng});
-                
+
                 const popupContent = `
-                    <strong>⚠️ Potential Obstruction</strong><br>
+                    <strong>⚠️ Potential Obstruction</strong> (${obstruction.legLabel} leg)<br>
                     Elevation: ${obstruction.elevation.toFixed(1)} m (${(obstruction.elevation * 3.28084).toFixed(0)} ft)<br>
-                    Distance: ${(distanceFromStart / 1000).toFixed(2)} km from leftmost point<br>
+                    Distance: ${(obstruction.routeDistance / 1000).toFixed(2)} km along profile from ${startLabel}<br>
                     Clearance needed: ${obstruction.clearanceNeeded.toFixed(1)} m
                 `;
                 
@@ -1687,12 +1939,12 @@
             });
         }
 
-        // Returns the worst-intruding sample of each contiguous blocked stretch of the path
-        function findObstructions() {
+        // Returns the worst-intruding sample of each contiguous blocked stretch of one link
+        function findLinkObstructions(link) {
             const obstructions = [];
             let worstInRun = null;
 
-            computeLineOfSightProfile().forEach(p => {
+            computeLinkProfile(link).forEach(p => {
                 if (p.blocked) {
                     const clearanceNeeded = p.elevation - p.requiredClearance;
                     if (!worstInRun || clearanceNeeded > worstInRun.clearanceNeeded) {
@@ -1706,6 +1958,15 @@
             if (worstInRun) obstructions.push(worstInRun);
 
             return obstructions;
+        }
+
+        // Obstructions along every leg of the route, with distance measured along the route
+        function findObstructions() {
+            return links.flatMap(link => findLinkObstructions(link).map(o => ({
+                ...o,
+                routeDistance: (link.offset || 0) + o.distance,
+                legLabel: `${POINT_LABELS[link.from]}–${POINT_LABELS[link.to]}`
+            })));
         }
     </script>
 </body>
